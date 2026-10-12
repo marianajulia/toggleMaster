@@ -1,0 +1,34 @@
+services:
+  evaluation-service:
+    build: ./evaluation-service
+    container_name: evaluation-service
+    restart: unless-stopped
+    ports:
+      - "8083:8080"
+    environment:
+      - PORT=8080
+      - REDIS_URL=redis://redis:6379
+      - FLAG_SERVICE_URL=http://flag-service:8002
+      - TARGETING_SERVICE_URL=http://targeting-service:8003
+      - AWS_SQS_URL=https://sqs.us-east-1.amazonaws.com/123456789012/sua-fila
+      - AWS_REGION=us-east-1
+    depends_on:
+      redis:
+        condition: service_healthy
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  redis_data:
